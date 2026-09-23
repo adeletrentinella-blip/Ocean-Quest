@@ -165,10 +165,10 @@ header p{font-size:1.05rem;opacity:.78;margin-top:5px}
 <header><h1>Memory Match</h1><p style="opacity:.75">Choose a grid size</p></header>
 <div class="cat-list" style="max-width:520px">
 <button class="cat-btn" onclick="startMemory(4)">4 × 4 <span style="opacity:.7;font-weight:500">(8 pairs)</span></button>
-<button class="cat-btn" onclick="startMemory(5)">5 × 5 <span style="opacity:.7;font-weight:500">(12 pairs*)</span></button>
+<button class="cat-btn" onclick="startMemory(45)">4 × 5 <span style="opacity:.7;font-weight:500">(10 pairs)</span></button>
 <button class="cat-btn" onclick="startMemory(6)">6 × 6 <span style="opacity:.7;font-weight:500">(18 pairs)</span></button>
 </div>
-<p style="text-align:center;opacity:.6;font-size:.85rem;margin-top:12px">*5×5 uses 12 pairs (24 cards) with one empty space</p>
+
 </div>
 
 <div class="screen" id="screen-memory">
@@ -377,17 +377,19 @@ function endQuiz(){const t=state.quiz.questions.length,s=state.quiz.score,p=Math
 
 function startMemory(size){
   size=size||4;
-  const pairs = size===4 ? 8 : size===5 ? 12 : 18;
+  let pairs, cols, rows;
+  if(size===45){pairs=10;cols=5;rows=4;}
+  else if(size===6){pairs=18;cols=6;rows=6;}
+  else{pairs=8;cols=4;rows=4;size=4;}
   const withPhotos=creatures.filter(c=>c.img);
   const selected=shuffle(withPhotos.length>=pairs?withPhotos:creatures).slice(0,pairs);
   const cards=[];selected.forEach(c=>{cards.push({...c});cards.push({...c});});
-  // 5x5 has 25 cells - we use 24 cards (12 pairs), leave center empty visually via grid
-  state.memory={cards:shuffle(cards),flipped:[],matched:0,moves:0,lock:false,total:pairs,size:size};
+  state.memory={cards:shuffle(cards),flipped:[],matched:0,moves:0,lock:false,total:pairs,size:size,cols:cols};
   document.getElementById('mem-total').textContent=pairs;
   showScreen('memory');
   renderMem();
 }
-function renderMem(){const board=document.getElementById('memory-board');board.innerHTML='';const sz=state.memory.size||4;board.style.gridTemplateColumns=`repeat(${sz},1fr)`;board.style.maxWidth=sz<=4?'680px':sz===5?'780px':'900px';document.getElementById('mem-moves').textContent=state.memory.moves;document.getElementById('mem-pairs').textContent=state.memory.matched;state.memory.cards.forEach((card,i)=>{const flipped=card.matched||state.memory.flipped.includes(i);const div=document.createElement('div');div.className='memory-card'+(flipped?' flipped':'')+(card.matched?' matched':'');const photoHtml=card.img?`<img src="${card.img}" alt="${card.name}">`:`<span>${card.short||'?'}</span>`;div.innerHTML=`<div class="memory-card-inner"><div class="card-face card-back">?</div><div class="card-face card-front"><div class="photo-area">${photoHtml}</div><div class="cname">${card.name}</div></div></div>`;div.onclick=()=>flip(i);board.appendChild(div);});}
+function renderMem(){const board=document.getElementById('memory-board');board.innerHTML='';const cols=state.memory.cols||state.memory.size||4;board.style.gridTemplateColumns=`repeat(${cols},1fr)`;board.style.maxWidth=cols<=4?'680px':cols===5?'780px':'900px';document.getElementById('mem-moves').textContent=state.memory.moves;document.getElementById('mem-pairs').textContent=state.memory.matched;state.memory.cards.forEach((card,i)=>{const flipped=card.matched||state.memory.flipped.includes(i);const div=document.createElement('div');div.className='memory-card'+(flipped?' flipped':'')+(card.matched?' matched':'');const photoHtml=card.img?`<img src="${card.img}" alt="${card.name}">`:`<span>${card.short||'?'}</span>`;div.innerHTML=`<div class="memory-card-inner"><div class="card-face card-back">?</div><div class="card-face card-front"><div class="photo-area">${photoHtml}</div><div class="cname">${card.name}</div></div></div>`;div.onclick=()=>flip(i);board.appendChild(div);});}
 function flip(i){const m=state.memory;if(m.lock||m.cards[i].matched||m.flipped.includes(i)||m.flipped.length>=2)return;m.flipped.push(i);playSound('flip');renderMem();if(m.flipped.length===2){m.moves++;m.lock=true;const[a,b]=m.flipped;if(m.cards[a].id===m.cards[b].id){m.cards[a].matched=true;m.cards[b].matched=true;m.matched++;unlock(m.cards[a].id);state.score+=15;playSound('match');m.flipped=[];m.lock=false;saveProgress();renderMem();if(m.matched===m.total){setTimeout(()=>{document.getElementById('result-title').textContent='Memory Master!';document.getElementById('result-score').textContent=`${m.moves} moves · 8 pairs`;document.getElementById('result-msg').textContent='New mix every round!';document.getElementById('result-replay').onclick=()=>showScreen('memory-select');showScreen('result');playSound('wave');},450);}}else{setTimeout(()=>{m.flipped=[];m.lock=false;renderMem();},700);}}}
 
 function startHabitat(){state.habitat={creatures:shuffle([...creatures]).slice(0,12),placed:{}};showScreen('habitat');renderHab();}
